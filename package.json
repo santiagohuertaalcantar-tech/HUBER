@@ -1,0 +1,8 @@
+{
+  "name": "uber-monitor",
+  "version": "1.0.0",
+  "main": "monitor_telegram.js",
+  "scripts": {
+    "start": "node monitor_telegram.js"
+  }
+}
