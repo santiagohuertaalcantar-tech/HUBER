@@ -46,9 +46,12 @@ async function sendTelegram(msg) {
     const data = await res.json();
     if (!data.ok) {
       console.error(`[ERROR] Telegram API error: ${data.error_code} - ${data.description}`);
+      return false;
     }
+    return true;
   } catch (err) {
     console.error(`[ERROR] Failed to send message: ${err.message}`);
+    return false;
   }
 }
 
@@ -79,6 +82,16 @@ async function check() {
 }
 
 console.log("Bot arrancado. Checando cada", INTERVAL_MIN, "min...");
+
+// Send test message immediately
+sendTelegram("🤖 Bot iniciado correctamente. Comenzando monitoreo...").then(success => {
+  if (success) {
+    console.log("[TEST] Test message sent successfully");
+  } else {
+    console.log("[TEST] Test message failed");
+  }
+});
+
 check();
 setInterval(check, INTERVAL_MIN * 60 * 1000);
 
