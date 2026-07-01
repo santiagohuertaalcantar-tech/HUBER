@@ -83,12 +83,12 @@ async function check() {
 
 console.log("Bot arrancado. Checando cada", INTERVAL_MIN, "min...");
 
-// Send test message immediately
-sendTelegram("🤖 Bot iniciado correctamente. Comenzando monitoreo...").then(success => {
+// Send startup message
+sendTelegram("A trabajar se ha dicho").then(success => {
   if (success) {
-    console.log("[TEST] Test message sent successfully");
+    console.log("[STARTUP] Message sent successfully");
   } else {
-    console.log("[TEST] Test message failed");
+    console.log("[STARTUP] Message failed");
   }
 });
 
