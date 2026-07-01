@@ -37,11 +37,19 @@ function calcZones() {
 
 async function sendTelegram(msg) {
   const url = `https://api.telegram.org/bot${TOKEN}/sendMessage`;
-  await fetch(url, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ chat_id: CHAT_ID, text: msg, parse_mode: "HTML" }),
-  });
+  try {
+    const res = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ chat_id: CHAT_ID, text: msg, parse_mode: "HTML" }),
+    });
+    const data = await res.json();
+    if (!data.ok) {
+      console.error(`[ERROR] Telegram API error: ${data.error_code} - ${data.description}`);
+    }
+  } catch (err) {
+    console.error(`[ERROR] Failed to send message: ${err.message}`);
+  }
 }
 
 async function check() {
@@ -73,3 +81,4 @@ async function check() {
 console.log("Bot arrancado. Checando cada", INTERVAL_MIN, "min...");
 check();
 setInterval(check, INTERVAL_MIN * 60 * 1000);
+
