@@ -11,19 +11,40 @@ const DEMAND = {
   itzimna:  [1,1,1,1,1,1,2,3,6,4,3,3,4,3,2,2,3,4,6,5,4,3,2,2],
 };
 
+function getMeridaTime() {
+  // Get current time in Mérida timezone (America/Mexico_City)
+  const formatter = new Intl.DateTimeFormat("es-MX", {
+    timeZone: "America/Mexico_City",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  });
+  
+  const now = new Date();
+  const meridaDate = new Date(now.toLocaleString("en-US", { timeZone: "America/Mexico_City" }));
+  
+  return {
+    hour: meridaDate.getHours(),
+    formatted: formatter.format(now),
+    date: meridaDate,
+  };
+}
+
 function calcZones() {
-  const h = new Date().getHours();
-  const weekend = [5, 6].includes(new Date().getDay());
+  const { hour } = getMeridaTime();
+  const meridaDate = new Date(new Date().toLocaleString("en-US", { timeZone: "America/Mexico_City" }));
+  const weekend = [5, 6].includes(meridaDate.getDay());
+  
   const out = {};
   Object.keys(DEMAND).forEach(z => {
-    let d = DEMAND[z][h] + (Math.random() - 0.5) * 1.5;
+    let d = DEMAND[z][hour] + (Math.random() - 0.5) * 1.5;
     if (weekend) d += 1;
     d = Math.max(1, Math.min(10, d));
     const surge = 1 + (d / 10) * 0.6;
     let score = d;
     if (surge > 1.35) score += 2;
-    if (h >= 7 && h <= 9) score += 1;
-    if (h >= 17 && h <= 20) score += 1.5;
+    if (hour >= 7 && hour <= 9) score += 1;
+    if (hour >= 17 && hour <= 20) score += 1.5;
     score = Math.min(10, score);
     out[z] = {
       score: +score.toFixed(1),
@@ -37,16 +58,27 @@ function calcZones() {
 
 async function sendTelegram(msg) {
   const url = `https://api.telegram.org/bot${TOKEN}/sendMessage`;
-  await fetch(url, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ chat_id: CHAT_ID, text: msg, parse_mode: "HTML" }),
-  });
+  try {
+    const res = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ chat_id: CHAT_ID, text: msg, parse_mode: "HTML" }),
+    });
+    const data = await res.json();
+    if (!data.ok) {
+      console.error(`[ERROR] Telegram API error: ${data.error_code} - ${data.description}`);
+      return false;
+    }
+    return true;
+  } catch (err) {
+    console.error(`[ERROR] Failed to send message: ${err.message}`);
+    return false;
+  }
 }
 
 async function check() {
   const zones = calcZones();
-  const hora = new Date().toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit" });
+  const { formatted: hora } = getMeridaTime();
 
   // Siempre manda resumen
   const lines = Object.entries(zones)
@@ -71,5 +103,17 @@ async function check() {
 }
 
 console.log("Bot arrancado. Checando cada", INTERVAL_MIN, "min...");
+console.log("Usando timezone: America/Mexico_City (Mérida)");
+
+// Send startup message
+sendTelegram("🤖 Bot iniciado. Usando hora de Mérida (America/Mexico_City)").then(success => {
+  if (success) {
+    console.log("[STARTUP] Message sent successfully");
+  } else {
+    console.log("[STARTUP] Message failed");
+  }
+});
+
 check();
 setInterval(check, INTERVAL_MIN * 60 * 1000);
+
